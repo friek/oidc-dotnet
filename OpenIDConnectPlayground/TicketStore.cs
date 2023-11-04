@@ -20,7 +20,7 @@ public class TicketStore : ITicketStore
     public Task<string> StoreAsync(AuthenticationTicket ticket)
     {
         var sessionKey = Guid.NewGuid().ToString();
-        _cache.SetAsync(sessionKey, _ticketSerializer.Serialize(ticket));
+        _cache.SetAsync(sessionKey, _ticketSerializer.Serialize(ticket)).Wait();
 
         return Task.FromResult(sessionKey);
     }
@@ -32,13 +32,10 @@ public class TicketStore : ITicketStore
 
     public Task<AuthenticationTicket?> RetrieveAsync(string key)
     {
-        var authTicket = _cache.Get(key);
-        if (authTicket is null)
-        {
-            return Task.FromResult<AuthenticationTicket?>(null);
-        }
-        
-        return Task.FromResult(_ticketSerializer.Deserialize(authTicket));
+        var authTicket = _cache.GetAsync(key).Result;
+        return authTicket is null
+            ? Task.FromResult<AuthenticationTicket?>(null)
+            : Task.FromResult(_ticketSerializer.Deserialize(authTicket));
     }
 
     public Task RemoveAsync(string key)

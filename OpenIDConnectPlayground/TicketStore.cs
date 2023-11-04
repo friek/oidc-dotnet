@@ -37,7 +37,7 @@ public class TicketStore : ITicketStore
         var authTicket = _cache.Get(SessionKey);
         if (authTicket is null)
         {
-            return null!;
+            return Task.FromResult<AuthenticationTicket?>(null);
         }
         
         return Task.FromResult(_ticketSerializer.Deserialize(authTicket));

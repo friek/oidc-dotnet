@@ -9,9 +9,6 @@ namespace OpenIDConnectPlayground;
 /// </summary>
 public class TicketStore : ITicketStore
 {
-    // Any key is ok, as long as it doesn't conflict with other values in the distributed cache
-    private const string SessionKey = "localsession";
-    
     private readonly IDistributedCache _cache;
     private readonly TicketSerializer _ticketSerializer = TicketSerializer.Default;
 
@@ -22,19 +19,20 @@ public class TicketStore : ITicketStore
 
     public Task<string> StoreAsync(AuthenticationTicket ticket)
     {
-        _cache.SetAsync(SessionKey, _ticketSerializer.Serialize(ticket));
+        var sessionKey = Guid.NewGuid().ToString();
+        _cache.SetAsync(sessionKey, _ticketSerializer.Serialize(ticket));
 
-        return Task.FromResult(SessionKey);
+        return Task.FromResult(sessionKey);
     }
 
     public Task RenewAsync(string key, AuthenticationTicket ticket)
     {
-        return StoreAsync(ticket);
+        return _cache.SetAsync(key, _ticketSerializer.Serialize(ticket));
     }
 
     public Task<AuthenticationTicket?> RetrieveAsync(string key)
     {
-        var authTicket = _cache.Get(SessionKey);
+        var authTicket = _cache.Get(key);
         if (authTicket is null)
         {
             return Task.FromResult<AuthenticationTicket?>(null);
